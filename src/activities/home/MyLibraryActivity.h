@@ -1,4 +1,5 @@
 #pragma once
+
 #include <functional>
 #include <string>
 #include <vector>
@@ -9,6 +10,9 @@
 
 class MyLibraryActivity final : public Activity {
  private:
+  // Deletion
+  void clearFileMetadata(const std::string& fullPath);
+
   ButtonNavigator buttonNavigator;
 
   size_t selectorIndex = 0;
