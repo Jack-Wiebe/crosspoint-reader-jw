@@ -20,7 +20,7 @@
 #include "util/StringUtils.h"
 
 int HomeActivity::getMenuItemCount() const {
-  int count = 4;  // My Library, Recents, File transfer, Settings
+  int count = 5;  // My Library, Library, Recents, File transfer, Settings
   if (!recentBooks.empty()) {
     count += recentBooks.size();
   }
@@ -190,6 +190,7 @@ void HomeActivity::loop() {
     int idx = 0;
     int menuSelectedIndex = selectorIndex - static_cast<int>(recentBooks.size());
     const int myLibraryIdx = idx++;
+    const int libraryViewerIdx = idx++;
     const int recentsIdx = idx++;
     const int opdsLibraryIdx = hasOpdsUrl ? idx++ : -1;
     const int fileTransferIdx = idx++;
@@ -199,6 +200,8 @@ void HomeActivity::loop() {
       onSelectBook(recentBooks[selectorIndex].path);
     } else if (menuSelectedIndex == myLibraryIdx) {
       onMyLibraryOpen();
+    } else if (menuSelectedIndex == libraryViewerIdx) {
+      onLibraryViewerOpen();
     } else if (menuSelectedIndex == recentsIdx) {
       onRecentsOpen();
     } else if (menuSelectedIndex == opdsLibraryIdx) {
@@ -226,12 +229,12 @@ void HomeActivity::render(RenderLock&&) {
                           std::bind(&HomeActivity::storeCoverBuffer, this));
 
   // Build menu items dynamically
-  std::vector<const char*> menuItems = {tr(STR_BROWSE_FILES), tr(STR_MENU_RECENT_BOOKS), tr(STR_FILE_TRANSFER),
-                                        tr(STR_SETTINGS_TITLE)};
-  std::vector<UIIcon> menuIcons = {Folder, Recent, Transfer, Settings};
+  std::vector<const char*> menuItems = {tr(STR_BROWSE_FILES), tr(STR_LIBRARY), tr(STR_MENU_RECENT_BOOKS),
+                                        tr(STR_FILE_TRANSFER), tr(STR_SETTINGS_TITLE)};
+  std::vector<UIIcon> menuIcons = {Folder, Library, Recent, Transfer, Settings};
 
   if (hasOpdsUrl) {
-    // Insert OPDS Browser after My Library
+    // Insert OPDS Browser after Library
     menuItems.insert(menuItems.begin() + 2, tr(STR_OPDS_BROWSER));
     menuIcons.insert(menuIcons.begin() + 2, Library);
   }
@@ -262,6 +265,8 @@ void HomeActivity::render(RenderLock&&) {
 void HomeActivity::onSelectBook(const std::string& path) { activityManager.goToReader(path); }
 
 void HomeActivity::onMyLibraryOpen() { activityManager.goToMyLibrary(); }
+
+void HomeActivity::onLibraryViewerOpen() { activityManager.goToLibraryViewer(); }
 
 void HomeActivity::onRecentsOpen() { activityManager.goToRecentBooks(); }
 

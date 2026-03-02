@@ -15,6 +15,7 @@ constexpr ThemeMetrics values = {.batteryWidth = 16,
                                  .contentSidePadding = 20,
                                  .listRowHeight = 40,
                                  .listWithSubtitleRowHeight = 60,
+                                 .listWithCoverRowHeight = 90,
                                  .menuRowHeight = 64,
                                  .menuSpacing = 8,
                                  .tabSpacing = 8,
@@ -25,6 +26,7 @@ constexpr ThemeMetrics values = {.batteryWidth = 16,
                                  .homeCoverHeight = 226,
                                  .homeCoverTileHeight = 242,
                                  .homeRecentBooksCount = 1,
+                                 .libraryItemsPerPage = 5,
                                  .buttonHintsHeight = 40,
                                  .sideButtonHintsWidth = 30,
                                  .progressBarHeight = 16,
@@ -54,6 +56,10 @@ class LyraTheme : public BaseTheme {
                 const std::function<std::string(int index)>& rowSubtitle,
                 const std::function<UIIcon(int index)>& rowIcon, const std::function<std::string(int index)>& rowValue,
                 bool highlightValue) const override;
+  void drawListWithCover(GfxRenderer& renderer, Rect rect, int itemCount, int selectedIndex,
+                         const std::function<std::string(int index)>& rowTitle,
+                         const std::function<std::string(int index)>& rowAuthor,
+                         const std::function<std::string(int index)>& rowCoverPath) const override;
   void drawButtonHints(GfxRenderer& renderer, const char* btn1, const char* btn2, const char* btn3,
                        const char* btn4) const override;
   void drawSideButtonHints(const GfxRenderer& renderer, const char* topBtn, const char* bottomBtn) const override;

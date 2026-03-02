@@ -19,4 +19,7 @@ std::string sanitizeFilename(const std::string& name, size_t maxBytes = 100);
 bool checkFileExtension(const std::string& fileName, const char* extension);
 bool checkFileExtension(const String& fileName, const char* extension);
 
+
+std::string getFileNameWithoutExtension(const std::string& fileName);
+
 }  // namespace StringUtils

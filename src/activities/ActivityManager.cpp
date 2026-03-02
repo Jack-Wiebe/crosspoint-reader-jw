@@ -6,6 +6,7 @@
 #include "boot_sleep/SleepActivity.h"
 #include "browser/OpdsBookBrowserActivity.h"
 #include "home/HomeActivity.h"
+#include "home/LibraryViewerActivity.h"
 #include "home/MyLibraryActivity.h"
 #include "home/RecentBooksActivity.h"
 #include "network/CrossPointWebServerActivity.h"
@@ -162,6 +163,10 @@ void ActivityManager::goToSettings() { replaceActivity(std::make_unique<Settings
 
 void ActivityManager::goToMyLibrary(std::string path) {
   replaceActivity(std::make_unique<MyLibraryActivity>(renderer, mappedInput, std::move(path)));
+}
+
+void ActivityManager::goToLibraryViewer() {
+  replaceActivity(std::make_unique<LibraryViewerActivity>(renderer, mappedInput));
 }
 
 void ActivityManager::goToRecentBooks() {

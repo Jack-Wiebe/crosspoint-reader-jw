@@ -35,6 +35,7 @@ struct ThemeMetrics {
   int contentSidePadding;
   int listRowHeight;
   int listWithSubtitleRowHeight;
+  int listWithCoverRowHeight;
   int menuRowHeight;
   int menuSpacing;
 
@@ -48,6 +49,7 @@ struct ThemeMetrics {
   int homeCoverHeight;
   int homeCoverTileHeight;
   int homeRecentBooksCount;
+  int libraryItemsPerPage;
 
   int buttonHintsHeight;
   int sideButtonHintsWidth;
@@ -79,6 +81,7 @@ constexpr ThemeMetrics values = {.batteryWidth = 15,
                                  .contentSidePadding = 20,
                                  .listRowHeight = 30,
                                  .listWithSubtitleRowHeight = 65,
+                                 .listWithCoverRowHeight = 90,
                                  .menuRowHeight = 45,
                                  .menuSpacing = 8,
                                  .tabSpacing = 10,
@@ -89,6 +92,7 @@ constexpr ThemeMetrics values = {.batteryWidth = 15,
                                  .homeCoverHeight = 400,
                                  .homeCoverTileHeight = 400,
                                  .homeRecentBooksCount = 1,
+                                 .libraryItemsPerPage = 5,
                                  .buttonHintsHeight = 40,
                                  .sideButtonHintsWidth = 30,
                                  .progressBarHeight = 16,
@@ -121,6 +125,10 @@ class BaseTheme {
                         const std::function<UIIcon(int index)>& rowIcon = nullptr,
                         const std::function<std::string(int index)>& rowValue = nullptr,
                         bool highlightValue = false) const;
+  virtual void drawListWithCover(GfxRenderer& renderer, Rect rect, int itemCount, int selectedIndex,
+                                 const std::function<std::string(int index)>& rowTitle,
+                                 const std::function<std::string(int index)>& rowAuthor,
+                                 const std::function<std::string(int index)>& rowCoverPath) const;
   virtual void drawHeader(const GfxRenderer& renderer, Rect rect, const char* title,
                           const char* subtitle = nullptr) const;
   virtual void drawSubHeader(const GfxRenderer& renderer, Rect rect, const char* label,
