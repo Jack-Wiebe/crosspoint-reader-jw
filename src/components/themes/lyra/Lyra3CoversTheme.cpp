@@ -168,8 +168,10 @@ void Lyra3CoversTheme::drawListWithCover(GfxRenderer& renderer, Rect rect, int i
     std::string coverPath = rowCoverPath(i);
     bool hasCover = false;
 
+    // Use consistent 100px height to match generated thumbnail, renderer will scale to fit
+    constexpr int thumbHeight = 100;
     if (!coverPath.empty()) {
-      std::string coverBmpPath = UITheme::getCoverThumbPath(coverPath, coverHeight);
+      std::string coverBmpPath = UITheme::getCoverThumbPath(coverPath, thumbHeight);
       FsFile file;
       if (Storage.openFileForRead("LIST", coverBmpPath, file)) {
         Bitmap bitmap(file);
@@ -187,11 +189,11 @@ void Lyra3CoversTheme::drawListWithCover(GfxRenderer& renderer, Rect rect, int i
       renderer.drawIcon(CoverIcon, coverX + 12, itemY + 8 + 12, 24, 24);
     }
 
-    int textY = itemY + 12;
+    int textY = itemY + 16;
     auto titleText = renderer.truncatedText(UI_12_FONT_ID, rowTitle(i).c_str(), rect.width - textX - Lyra3CoversMetrics::values.contentSidePadding);
     renderer.drawText(UI_12_FONT_ID, textX, textY, titleText.c_str(), !isSelected);
 
-    textY += 20;
+    textY += 26;
     auto authorText = renderer.truncatedText(UI_10_FONT_ID, rowAuthor(i).c_str(), rect.width - textX - Lyra3CoversMetrics::values.contentSidePadding);
     renderer.drawText(UI_10_FONT_ID, textX, textY, authorText.c_str(), !isSelected);
   }

@@ -38,11 +38,11 @@ void LibraryViewerActivity::loadBooks() {
       std::string path = "/" + std::string(name);
 
       Epub epub(path, "/.crosspoint");
-      bool loaded = epub.load(false, true);
+      bool loaded = epub.load(true, true);
 
-      // Generate thumbnail for cover if it doesn't exist
+      // Generate thumbnail for cover if it doesn't exist (100px height, will scale to fit)
       if (loaded && !epub.getCoverBmpPath().empty()) {
-        epub.generateThumbBmp(70); // 70px height for library cover
+        epub.generateThumbBmp(100); // 100px height - renderer will scale to fit
       }
 
       LibraryBook book;
