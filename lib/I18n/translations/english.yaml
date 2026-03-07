@@ -82,8 +82,8 @@ STR_CALIBRE_PASSWORD_REQUIRED: "Password required"
 STR_CALIBRE_TRANSFER_INTERRUPTED: "Transfer interrupted"
 STR_CALIBRE_INSTRUCTION_1: "1) Install CrossPoint Reader plugin"
 STR_CALIBRE_INSTRUCTION_2: "2) Be on the same WiFi network"
-STR_CALIBRE_INSTRUCTION_3: '3) In Calibre: "Send to device"'
-STR_CALIBRE_INSTRUCTION_4: '"Keep this screen open while sending"'
+STR_CALIBRE_INSTRUCTION_3: "3) In Calibre: 'Send to device'"
+STR_CALIBRE_INSTRUCTION_4: "Keep this screen open while sending"
 STR_CAT_DISPLAY: "Display"
 STR_CAT_READER: "Reader"
 STR_CAT_CONTROLS: "Controls"
