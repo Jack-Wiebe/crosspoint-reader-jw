@@ -343,8 +343,8 @@ void LyraTheme::drawListWithCover(GfxRenderer& renderer, Rect rect, int itemCoun
                                   const std::function<std::string(int index)>& rowTitle,
                                   const std::function<std::string(int index)>& rowAuthor,
                                   const std::function<std::string(int index)>& rowCoverPath) const {
-  const int rowHeight = LyraMetrics::values.listWithCoverRowHeight;
-  const int pageItems = rect.height / rowHeight;
+  const int pageItems = LyraMetrics::values.libraryItemsPerPage;
+  const int rowHeight = rect.height / pageItems;
 
   const int totalPages = (itemCount + pageItems - 1) / pageItems;
   if (totalPages > 1) {

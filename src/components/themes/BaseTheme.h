@@ -35,7 +35,6 @@ struct ThemeMetrics {
   int contentSidePadding;
   int listRowHeight;
   int listWithSubtitleRowHeight;
-  int listWithCoverRowHeight;
   int menuRowHeight;
   int menuSpacing;
 
@@ -81,7 +80,6 @@ constexpr ThemeMetrics values = {.batteryWidth = 15,
                                  .contentSidePadding = 20,
                                  .listRowHeight = 30,
                                  .listWithSubtitleRowHeight = 65,
-                                 .listWithCoverRowHeight = 90,
                                  .menuRowHeight = 45,
                                  .menuSpacing = 8,
                                  .tabSpacing = 10,

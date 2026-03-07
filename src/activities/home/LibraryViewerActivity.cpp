@@ -40,11 +40,16 @@ void LibraryViewerActivity::loadBooks() {
       Epub epub(path, "/.crosspoint");
       bool loaded = epub.load(false, true);
 
+      // Generate thumbnail for cover if it doesn't exist
+      if (loaded && !epub.getCoverBmpPath().empty()) {
+        epub.generateThumbBmp(70); // 70px height for library cover
+      }
+
       LibraryBook book;
       book.path = path;
       book.title = loaded ? epub.getTitle() : StringUtils::getFileNameWithoutExtension(name);
-      book.author = loaded ? epub.getAuthor() : "";
-      book.coverBmpPath = loaded ? epub.getCoverBmpPath() : "";
+      book.author = loaded ? epub.getAuthor() : "NO AUTHOR FOUND";
+      book.coverBmpPath = loaded ? epub.getThumbBmpPath() : "";
 
       books.push_back(book);
     }
@@ -74,7 +79,8 @@ void LibraryViewerActivity::onExit() {
 }
 
 void LibraryViewerActivity::loop() {
-  const int pageItems = UITheme::getInstance().getNumberOfItemsPerPage(renderer, true, false, true, false);
+  const auto& metrics = UITheme::getInstance().getMetrics();
+  const int pageItems = metrics.libraryItemsPerPage;
 
   if (mappedInput.wasReleased(MappedInputManager::Button::Confirm)) {
     if (!books.empty() && selectorIndex < books.size()) {
