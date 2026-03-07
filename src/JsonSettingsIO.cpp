@@ -332,3 +332,64 @@ bool JsonSettingsIO::loadRecentBooks(RecentBooksStore& store, const char* json) 
   LOG_DBG("RBS", "Recent books loaded from file (%d entries)", store.getCount());
   return true;
 }
+
+// ---- LibraryStore ----
+
+bool JsonSettingsIO::saveLibrary(const LibraryStore& store, const char* path) {
+  JsonDocument doc;
+  
+  JsonArray booksArr = doc["books"].to<JsonArray>();
+  for (const auto& book : store.getBooks()) {
+    JsonObject obj = booksArr.add<JsonObject>();
+    obj["path"] = book.path;
+    obj["title"] = book.title;
+    obj["author"] = book.author;
+    obj["coverBmpPath"] = book.coverBmpPath;
+  }
+
+  JsonArray pathsArr = doc["paths"].to<JsonArray>();
+  for (const auto& path : store.getBookPaths()) {
+    pathsArr.add(path);
+  }
+
+  String json;
+  serializeJson(doc, json);
+  return Storage.writeFile(path, json);
+}
+
+bool JsonSettingsIO::loadLibrary(LibraryStore& store, const char* json) {
+  JsonDocument doc;
+  auto error = deserializeJson(doc, json);
+  if (error) {
+    LOG_ERR("LIB", "JSON parse error: %s", error.c_str());
+    return false;
+  }
+
+  std::vector<LibraryBook> books;
+  std::vector<std::string> paths;
+
+  if (doc["books"].is<JsonArray>()) {
+    JsonArray arr = doc["books"].as<JsonArray>();
+    for (JsonObject obj : arr) {
+      LibraryBook book;
+      book.path = obj["path"].as<std::string>();
+      book.title = obj["title"].as<std::string>();
+      book.author = obj["author"].as<std::string>();
+      book.coverBmpPath = obj["coverBmpPath"].as<std::string>();
+      books.push_back(book);
+    }
+  }
+
+  if (doc["paths"].is<JsonArray>()) {
+    JsonArray pathsArr = doc["paths"].as<JsonArray>();
+    for (auto path : pathsArr) {
+      paths.push_back(path.as<std::string>());
+    }
+  }
+
+  store.setBooks(books);
+  store.setBookPaths(paths);
+
+  LOG_DBG("LIB", "Library loaded from file (%d books, %d paths)", store.getCount(), store.getPathCount());
+  return true;
+}

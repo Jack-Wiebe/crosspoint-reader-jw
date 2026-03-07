@@ -3,24 +3,24 @@
 #include <string>
 #include <vector>
 
+#include "../../LibraryStore.h"
 #include "../Activity.h"
 #include "util/ButtonNavigator.h"
-
-struct LibraryBook {
-  std::string path;
-  std::string title;
-  std::string author;
-  std::string coverBmpPath;
-};
 
 class LibraryViewerActivity final : public Activity {
   private:
     ButtonNavigator buttonNavigator;
 
     size_t selectorIndex = 0;
+    size_t currentPage = 0;
+    bool isLoading = false;
+    bool isFirstLoad = false;
 
     std::vector<LibraryBook> books;
+    std::vector<std::string> bookPaths;
 
+    void scanBookPaths();
+    void loadPage(size_t page);
     void loadBooks();
 
   public:
