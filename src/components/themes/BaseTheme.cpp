@@ -10,6 +10,7 @@
 #include <string>
 
 #include "I18n.h"
+#include "components/icons/cover.h"
 #include "RecentBooksStore.h"
 #include "components/UITheme.h"
 #include "fontIds.h"
@@ -20,6 +21,8 @@ constexpr int batteryPercentSpacing = 4;
 constexpr int homeMenuMargin = 20;
 constexpr int homeMarginTop = 30;
 constexpr int subtitleY = 738;
+constexpr int cornerRadius = 6;
+
 
 // Helper: draw battery icon at given position
 void drawBatteryIcon(const GfxRenderer& renderer, int x, int y, int battWidth, int rectHeight, uint16_t percentage) {
@@ -254,34 +257,23 @@ void BaseTheme::drawList(const GfxRenderer& renderer, Rect rect, int itemCount, 
 }
 
 void BaseTheme::drawListWithCover(GfxRenderer& renderer, Rect rect, int itemCount, int selectedIndex,
-                                 const std::function<std::string(int index)>& rowTitle,
-                                 const std::function<std::string(int index)>& rowAuthor,
-                                 const std::function<std::string(int index)>& rowCoverPath) const {
+                                  const std::function<std::string(int index)>& rowTitle,
+                                  const std::function<std::string(int index)>& rowAuthor,
+                                  const std::function<std::string(int index)>& rowCoverPath) const {
   const int pageItems = BaseMetrics::values.libraryItemsPerPage;
   const int rowHeight = rect.height / pageItems;
 
   const int totalPages = (itemCount + pageItems - 1) / pageItems;
   if (totalPages > 1) {
-    constexpr int indicatorWidth = 20;
-    constexpr int arrowSize = 6;
-    constexpr int margin = 15;
+    const int scrollAreaHeight = rect.height;
 
-    const int centerX = rect.x + rect.width - indicatorWidth / 2 - margin;
-    const int indicatorTop = rect.y;
-    const int indicatorBottom = rect.y + rect.height - arrowSize;
-
-    for (int i = 0; i < arrowSize; ++i) {
-      const int lineWidth = 1 + i * 2;
-      const int startX = centerX - i;
-      renderer.drawLine(startX, indicatorTop + i, startX + lineWidth - 1, indicatorTop + i);
-    }
-
-    for (int i = 0; i < arrowSize; ++i) {
-      const int lineWidth = 1 + (arrowSize - 1 - i) * 2;
-      const int startX = centerX - (arrowSize - 1 - i);
-      renderer.drawLine(startX, indicatorBottom - arrowSize + 1 + i, startX + lineWidth - 1,
-                        indicatorBottom - arrowSize + 1 + i);
-    }
+    const int scrollBarHeight = (scrollAreaHeight * pageItems) / itemCount;
+    const int currentPage = selectedIndex / pageItems;
+    const int scrollBarY = rect.y + ((scrollAreaHeight - scrollBarHeight) * currentPage) / (totalPages - 1);
+    const int scrollBarX = rect.x + rect.width - BaseMetrics::values.scrollBarRightOffset;
+    renderer.drawLine(scrollBarX, rect.y, scrollBarX, rect.y + scrollAreaHeight, true);
+    renderer.fillRect(scrollBarX - BaseMetrics::values.scrollBarWidth, scrollBarY, BaseMetrics::values.scrollBarWidth,
+                      scrollBarHeight, true);
   }
 
   const int coverHeight = rowHeight - 16;
@@ -289,8 +281,14 @@ void BaseTheme::drawListWithCover(GfxRenderer& renderer, Rect rect, int itemCoun
   const int coverX = BaseMetrics::values.contentSidePadding;
   const int textX = coverX + coverWidth + 12;
 
+  int contentWidth =
+      rect.width -
+      (totalPages > 1 ? (BaseMetrics::values.scrollBarWidth + BaseMetrics::values.scrollBarRightOffset) : 1);
+
   if (selectedIndex >= 0) {
-    renderer.fillRect(0, rect.y + selectedIndex % pageItems * rowHeight - 2, rect.width, rowHeight);
+    renderer.fillRoundedRect(BaseMetrics::values.contentSidePadding, rect.y + selectedIndex % pageItems * rowHeight,
+                             contentWidth - BaseMetrics::values.contentSidePadding * 2, rowHeight, cornerRadius,
+                             Color::LightGray);
   }
 
   const auto pageStartIndex = selectedIndex / pageItems * pageItems;
@@ -317,19 +315,20 @@ void BaseTheme::drawListWithCover(GfxRenderer& renderer, Rect rect, int itemCoun
     }
 
     if (!hasCover) {
-      renderer.drawRect(coverX, itemY + 8, coverWidth, coverHeight, true);
+      // renderer.drawRect(coverX, itemY + 8, coverWidth, coverHeight, true);
+      // renderer.fillRect(coverX, itemY + 8 + (coverHeight / 3), coverWidth, 2 * coverHeight / 3, true);
+      renderer.drawIcon(CoverIcon, coverX + 12, itemY + 8 + 12, 24, 24);
     }
 
-    int textY = itemY + 16;
+    int textY = itemY + 20;
     auto titleText = renderer.truncatedText(UI_12_FONT_ID, rowTitle(i).c_str(), rect.width - textX - BaseMetrics::values.contentSidePadding);
-    renderer.drawText(UI_12_FONT_ID, textX, textY, titleText.c_str(), !isSelected);
+    renderer.drawText(UI_12_FONT_ID, textX, textY, titleText.c_str());
 
-    textY += 26;
+    textY += 40;
     auto authorText = renderer.truncatedText(UI_10_FONT_ID, rowAuthor(i).c_str(), rect.width - textX - BaseMetrics::values.contentSidePadding);
-    renderer.drawText(UI_10_FONT_ID, textX, textY, authorText.c_str(), !isSelected);
+    renderer.drawText(UI_10_FONT_ID, textX, textY, authorText.c_str());
   }
 }
-
 void BaseTheme::drawHeader(const GfxRenderer& renderer, Rect rect, const char* title, const char* subtitle) const {
   // Hide last battery draw
   constexpr int maxBatteryWidth = 80;

@@ -60,15 +60,15 @@ void LibraryViewerActivity::loadPage(size_t page) {
     Epub epub(path, "/.crosspoint");
     bool loaded = epub.load(true, true);
 
-    // Generate thumbnail for cover if it doesn't exist (100px height, will scale to fit)
-    if (loaded && !epub.getCoverBmpPath().empty()) {
-      epub.generateThumbBmp(100);
-    }
+    // // Generate thumbnail for cover if it doesn't exist (100px height, will scale to fit)
+    // if (loaded && !epub.getCoverBmpPath().empty()) {
+    //   epub.generateThumbBmp(100);
+    // }
 
     LibraryBook book;
     book.path = path;
     book.title = loaded ? epub.getTitle() : StringUtils::getFileNameWithoutExtension(path);
-    book.author = loaded ? epub.getAuthor() : "NO AUTHOR FOUND";
+    book.author = loaded ? epub.getAuthor() : "";
     book.coverBmpPath = loaded ? epub.getThumbBmpPath() : "";
 
     books.push_back(book);
@@ -152,15 +152,27 @@ void LibraryViewerActivity::loop() {
       loadPage(currentPage);
       selectorIndex = 0;
       requestUpdate();
+    } else {
+      // Loop back to first page
+      currentPage = 0;
+      loadPage(0);
+      selectorIndex = 0;
+      requestUpdate();
     }
   });
 
-  buttonNavigator.onPreviousRelease([this, pageItems] {
+  buttonNavigator.onPreviousRelease([this, pageItems, totalPages] {
     if (selectorIndex > 0) {
       selectorIndex--;
       requestUpdate();
     } else if (currentPage > 0) {
       currentPage--;
+      loadPage(currentPage);
+      selectorIndex = books.empty() ? 0 : books.size() - 1;
+      requestUpdate();
+    } else {
+      // Loop to last page
+      currentPage = totalPages - 1;
       loadPage(currentPage);
       selectorIndex = books.empty() ? 0 : books.size() - 1;
       requestUpdate();
