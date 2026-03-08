@@ -67,10 +67,26 @@ void ClearLibraryCacheActivity::render(RenderLock&&) {
   }
 }
 
+namespace {
+constexpr char LIBRARY_FILE_JSON[] = "/.crosspoint/library.json";
+}  // namespace
+
 void ClearLibraryCacheActivity::clearLibraryCache() {
   LOG_DBG("CLEAR_LIBRARY", "Clearing library cache...");
 
-  if (Storage.remove("/.crosspoint/library.json")) {
+  // Check if file exists first
+  if (!Storage.exists(LIBRARY_FILE_JSON)) {
+    LOG_DBG("CLEAR_LIBRARY", "Library cache file doesn't exist, treating as success");
+    state = SUCCESS;
+    requestUpdate();
+    return;
+  }
+
+  // Try to remove the file
+  bool result = Storage.remove(LIBRARY_FILE_JSON);
+
+  // Verify removal with Storage.exists()
+  if (result && !Storage.exists(LIBRARY_FILE_JSON)) {
     LOG_DBG("CLEAR_LIBRARY", "Library cache cleared successfully");
     state = SUCCESS;
   } else {

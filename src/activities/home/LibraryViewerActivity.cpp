@@ -147,7 +147,7 @@ void LibraryViewerActivity::loop() {
     int newIndex = ButtonNavigator::nextIndex(selectorIndex, currentPageItems);
 
     if (newIndex < selectorIndex) {
-      if (currentPage >= totalPages){
+      if (currentPage + 1 >= totalPages){
         currentPage = 0;
         newIndex = 0;
       }else{
@@ -198,7 +198,7 @@ void LibraryViewerActivity::loop() {
     if (newPage != currentPage) {
       currentPage = newPage;
       loadPage(currentPage);
-      selectorIndex = pageItems - 1;
+      selectorIndex = (listSize-1) % pageItems;
     } else {
       selectorIndex = newAbsIndex - currentPage * pageItems;
     }
