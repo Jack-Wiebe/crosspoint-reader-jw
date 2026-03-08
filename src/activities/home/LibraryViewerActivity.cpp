@@ -81,8 +81,10 @@ void LibraryViewerActivity::loadBooks() {
   isLoading = true;
   requestUpdate();
 
-  // Clear the singleton to ensure we start fresh (handles deleted cache or new books)
+  // Clear the singleton and local vectors to ensure we start fresh
   LIBRARY.clear();
+  books.clear();
+  bookPaths.clear();
 
   // Try loading from store first
   if (!LIBRARY.loadFromFile()) {
@@ -90,20 +92,23 @@ void LibraryViewerActivity::loadBooks() {
     scanBookPaths();
     LIBRARY.setBookPaths(bookPaths);
     LIBRARY.saveToFile();
+    // Force reload page 0 since we have no cache
+    loadPage(0);
+    currentPage = 0;
   } else {
     // Load from cache
     books = LIBRARY.getBooks();
     bookPaths = LIBRARY.getBookPaths();
-  }
 
-  // Always scan to check for changes (new books added or cache deleted)
-  scanBookPaths();
-  if (bookPaths.size() != LIBRARY.getPathCount()) {
-    // Paths differ from cache - reload
-    LIBRARY.setBookPaths(bookPaths);
-    LIBRARY.saveToFile();
-    loadPage(0);
-    currentPage = 0;
+    // Check for changes (new books added)
+    scanBookPaths();
+    if (bookPaths.size() != LIBRARY.getPathCount()) {
+      // Paths differ from cache - reload
+      LIBRARY.setBookPaths(bookPaths);
+      LIBRARY.saveToFile();
+      loadPage(0);
+      currentPage = 0;
+    }
   }
 
   selectorIndex = 0;
