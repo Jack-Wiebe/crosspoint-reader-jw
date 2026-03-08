@@ -329,6 +329,7 @@ void BaseTheme::drawListWithCover(GfxRenderer& renderer, Rect rect, int itemCoun
     renderer.drawText(UI_10_FONT_ID, textX, textY, authorText.c_str());
   }
 }
+
 void BaseTheme::drawHeader(const GfxRenderer& renderer, Rect rect, const char* title, const char* subtitle) const {
   // Hide last battery draw
   constexpr int maxBatteryWidth = 80;

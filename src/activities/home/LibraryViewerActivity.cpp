@@ -66,7 +66,7 @@ void LibraryViewerActivity::loadPage(size_t page) {
 
     LibraryBook book;
     book.path = path;
-    book.title = loaded ? epub.getTitle() : StringUtils::getFileNameWithoutExtension(path);
+    book.title = StringUtils::getFileNameWithoutExtension(path);
     book.author = loaded ? epub.getAuthor() : "";
     book.coverBmpPath = loaded ? epub.getThumbBmpPath() : "";
 
@@ -144,8 +144,9 @@ void LibraryViewerActivity::loop() {
 
   buttonNavigator.onNextRelease([this, listSize, pageItems] {
     int newIndex = ButtonNavigator::nextIndex(static_cast<int>(selectorIndex), listSize);
-    if (newIndex / pageItems != currentPage) {
-      currentPage = newIndex / pageItems;
+    int newPage = newIndex / pageItems;
+    if (newPage != currentPage) {
+      currentPage = newPage;
       loadPage(currentPage);
     }
     selectorIndex = newIndex;
@@ -154,8 +155,9 @@ void LibraryViewerActivity::loop() {
 
   buttonNavigator.onPreviousRelease([this, listSize, pageItems] {
     int newIndex = ButtonNavigator::previousIndex(static_cast<int>(selectorIndex), listSize);
-    if (newIndex / pageItems != currentPage) {
-      currentPage = newIndex / pageItems;
+    int newPage = newIndex / pageItems;
+    if (newPage != currentPage) {
+      currentPage = newPage;
       loadPage(currentPage);
     }
     selectorIndex = newIndex;
@@ -163,25 +165,29 @@ void LibraryViewerActivity::loop() {
   });
 
   buttonNavigator.onNextContinuous([this, listSize, pageItems] {
-    int newIndex = ButtonNavigator::nextPageIndex(static_cast<int>(selectorIndex), listSize, pageItems);
-    if (newIndex / pageItems != currentPage) {
-      currentPage = newIndex / pageItems;
+    int currentAbsIndex = currentPage * pageItems + selectorIndex;
+    int newAbsIndex = ButtonNavigator::nextPageIndex(currentAbsIndex, listSize, pageItems);
+    int newPage = newAbsIndex / pageItems;
+    if (newPage != currentPage) {
+      currentPage = newPage;
       loadPage(currentPage);
       selectorIndex = 0;
     } else {
-      selectorIndex = newIndex;
+      selectorIndex = newAbsIndex - currentPage * pageItems;
     }
     requestUpdate();
   });
 
   buttonNavigator.onPreviousContinuous([this, listSize, pageItems] {
-    int newIndex = ButtonNavigator::previousPageIndex(static_cast<int>(selectorIndex), listSize, pageItems);
-    if (newIndex / pageItems != currentPage) {
-      currentPage = newIndex / pageItems;
+    int currentAbsIndex = currentPage * pageItems + selectorIndex;
+    int newAbsIndex = ButtonNavigator::previousPageIndex(currentAbsIndex, listSize, pageItems);
+    int newPage = newAbsIndex / pageItems;
+    if (newPage != currentPage) {
+      currentPage = newPage;
       loadPage(currentPage);
       selectorIndex = pageItems - 1;
     } else {
-      selectorIndex = newIndex;
+      selectorIndex = newAbsIndex - currentPage * pageItems;
     }
     requestUpdate();
   });
