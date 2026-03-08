@@ -142,29 +142,29 @@ void LibraryViewerActivity::loop() {
 
   int listSize = static_cast<int>(bookPaths.size());
 
-  buttonNavigator.onNextRelease([this, listSize, pageItems] {
-    int newIndex = ButtonNavigator::nextIndex(static_cast<int>(selectorIndex), listSize);
-    int newPage = newIndex / pageItems;
-    if (newPage != currentPage) {
-      currentPage = newPage;
+  buttonNavigator.onNextRelease([this, pageItems, listSize] {
+    int currentPageItems = books.size();
+    int newIndex = ButtonNavigator::nextIndex(selectorIndex, currentPageItems);
+
+    // If wrapped (newIndex < selectorIndex), we moved to next page
+    if (newIndex < selectorIndex && currentPage < (listSize - 1) / pageItems) {
+      currentPage++;
       loadPage(currentPage);
-      selectorIndex = newIndex - currentPage * pageItems;
-    } else {
-      selectorIndex = newIndex;
     }
+    selectorIndex = newIndex;
     requestUpdate();
   });
 
-  buttonNavigator.onPreviousRelease([this, listSize, pageItems] {
-    int newIndex = ButtonNavigator::previousIndex(static_cast<int>(selectorIndex), listSize);
-    int newPage = newIndex / pageItems;
-    if (newPage != currentPage) {
-      currentPage = newPage;
+  buttonNavigator.onPreviousRelease([this, pageItems, listSize] {
+    int currentPageItems = books.size();
+    int newIndex = ButtonNavigator::previousIndex(selectorIndex, currentPageItems);
+
+    // If wrapped (newIndex > selectorIndex), we moved to previous page
+    if (newIndex > selectorIndex && currentPage > 0) {
+      currentPage--;
       loadPage(currentPage);
-      selectorIndex = newIndex - currentPage * pageItems;
-    } else {
-      selectorIndex = newIndex;
     }
+    selectorIndex = newIndex;
     requestUpdate();
   });
 

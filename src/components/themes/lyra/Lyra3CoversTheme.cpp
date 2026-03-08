@@ -146,7 +146,7 @@ void Lyra3CoversTheme::drawListWithCover(GfxRenderer& renderer, Rect rect, int i
   const int coverWidth = coverHeight * 0.6;
   const int coverX = Lyra3CoversMetrics::values.contentSidePadding;
   const int textX = coverX + coverWidth + 12;
-  const int coverMargin = (rowHeight - coverHeight) / 2;
+  const int coverMargin = rowHeight - coverHeight;
 
   int contentWidth =
       rect.width -
