@@ -81,6 +81,9 @@ void LibraryViewerActivity::loadBooks() {
   isLoading = true;
   requestUpdate();
 
+  // Clear the singleton to ensure we start fresh (handles deleted cache or new books)
+  LIBRARY.clear();
+
   // Try loading from store first
   if (!LIBRARY.loadFromFile()) {
     // No cache - scan and save paths
