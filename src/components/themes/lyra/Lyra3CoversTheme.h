@@ -37,11 +37,18 @@ constexpr ThemeMetrics values = {.batteryWidth = 16,
                                  .keyboardKeyHeight = 50,
                                  .keyboardKeySpacing = 0,
                                  .keyboardBottomAligned = true,
-                                 .keyboardCenteredText = true};
+                                 .keyboardCenteredText = true,
+                                 .libraryItemsPerPage = 5,
+                                 .coverHeight = 100
+                                };
 }
 
 class Lyra3CoversTheme : public LyraTheme {
  public:
+  void drawListWithCover(GfxRenderer& renderer, Rect rect, int itemCount, int selectedIndex,
+                         const std::function<std::string(int index)>& rowTitle,
+                         const std::function<std::string(int index)>& rowAuthor,
+                         const std::function<std::string(int index)>& rowCoverPath) const override;
   void drawRecentBookCover(GfxRenderer& renderer, Rect rect, const std::vector<RecentBook>& recentBooks,
                            const int selectorIndex, bool& coverRendered, bool& coverBufferStored, bool& bufferRestored,
                            std::function<bool()> storeCoverBuffer) const override;

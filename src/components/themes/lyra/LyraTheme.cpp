@@ -339,6 +339,79 @@ void LyraTheme::drawList(const GfxRenderer& renderer, Rect rect, int itemCount, 
   }
 }
 
+void LyraTheme::drawListWithCover(GfxRenderer& renderer, Rect rect, int itemCount, int selectedIndex,
+                                  const std::function<std::string(int index)>& rowTitle,
+                                  const std::function<std::string(int index)>& rowAuthor,
+                                  const std::function<std::string(int index)>& rowCoverPath) const {
+  const int pageItems = LyraMetrics::values.libraryItemsPerPage;
+  const int rowHeight = rect.height / pageItems;
+
+  const int totalPages = (itemCount + pageItems - 1) / pageItems;
+  if (totalPages > 1) {
+    const int scrollAreaHeight = rect.height;
+
+    const int scrollBarHeight = (scrollAreaHeight * pageItems) / itemCount;
+    const int currentPage = selectedIndex / pageItems;
+    const int scrollBarY = rect.y + ((scrollAreaHeight - scrollBarHeight) * currentPage) / (totalPages - 1);
+    const int scrollBarX = rect.x + rect.width - LyraMetrics::values.scrollBarRightOffset;
+    renderer.drawLine(scrollBarX, rect.y, scrollBarX, rect.y + scrollAreaHeight, true);
+    renderer.fillRect(scrollBarX - LyraMetrics::values.scrollBarWidth, scrollBarY, LyraMetrics::values.scrollBarWidth,
+                      scrollBarHeight, true);
+  }
+
+  const int coverHeight = rowHeight - 16;
+  const int coverWidth = coverHeight * 0.6;
+  const int coverX = LyraMetrics::values.contentSidePadding;
+  const int textX = coverX + coverWidth + 12;
+
+  int contentWidth =
+      rect.width -
+      (totalPages > 1 ? (LyraMetrics::values.scrollBarWidth + LyraMetrics::values.scrollBarRightOffset) : 1);
+
+  if (selectedIndex >= 0) {
+    renderer.fillRoundedRect(LyraMetrics::values.contentSidePadding, rect.y + selectedIndex % pageItems * rowHeight,
+                             contentWidth - LyraMetrics::values.contentSidePadding * 2, rowHeight, cornerRadius,
+                             Color::LightGray);
+  }
+
+  const auto pageStartIndex = selectedIndex / pageItems * pageItems;
+  for (int i = pageStartIndex; i < itemCount && i < pageStartIndex + pageItems; i++) {
+    const int itemY = rect.y + (i % pageItems) * rowHeight;
+    const bool isSelected = (i == selectedIndex);
+
+    std::string coverPath = rowCoverPath(i);
+    bool hasCover = false;
+
+    constexpr int thumbHeight = 100;
+    if (!coverPath.empty()) {
+      std::string coverBmpPath = UITheme::getCoverThumbPath(coverPath, thumbHeight);
+      FsFile file;
+      if (Storage.openFileForRead("LIST", coverBmpPath, file)) {
+        Bitmap bitmap(file);
+        if (bitmap.parseHeaders() == BmpReaderError::Ok) {
+          renderer.drawBitmap(bitmap, coverX, itemY + 8, coverWidth, coverHeight);
+          hasCover = true;
+        }
+        file.close();
+      }
+    }
+
+    if (!hasCover) {
+      renderer.drawRect(coverX, itemY + 8, coverWidth, coverHeight, true);
+      renderer.fillRect(coverX, itemY + 8 + (coverHeight / 3), coverWidth, 2 * coverHeight / 3, true);
+      renderer.drawIcon(CoverIcon, coverX + 12, itemY + 8 + 12, 24, 24);
+    }
+
+    int textY = itemY + 16;
+    auto titleText = renderer.truncatedText(UI_12_FONT_ID, rowTitle(i).c_str(), rect.width - textX - LyraMetrics::values.contentSidePadding);
+    renderer.drawText(UI_12_FONT_ID, textX, textY, titleText.c_str(), !isSelected);
+
+    textY += 26;
+    auto authorText = renderer.truncatedText(UI_10_FONT_ID, rowAuthor(i).c_str(), rect.width - textX - LyraMetrics::values.contentSidePadding);
+    renderer.drawText(UI_10_FONT_ID, textX, textY, authorText.c_str(), !isSelected);
+  }
+}
+
 void LyraTheme::drawButtonHints(GfxRenderer& renderer, const char* btn1, const char* btn2, const char* btn3,
                                 const char* btn4) const {
   const GfxRenderer::Orientation orig_orientation = renderer.getOrientation();

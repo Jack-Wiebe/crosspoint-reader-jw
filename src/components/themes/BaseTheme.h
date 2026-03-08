@@ -48,7 +48,6 @@ struct ThemeMetrics {
   int homeCoverHeight;
   int homeCoverTileHeight;
   int homeRecentBooksCount;
-  int libraryItemsPerPage;
 
   int buttonHintsHeight;
   int sideButtonHintsWidth;
@@ -63,6 +62,9 @@ struct ThemeMetrics {
   int keyboardKeySpacing;
   bool keyboardBottomAligned;
   bool keyboardCenteredText;
+
+  int libraryItemsPerPage;
+  int coverHeight;
 };
 
 enum UIIcon { Folder, Text, Image, Book, File, Recent, Settings, Transfer, Library, Wifi, Hotspot };
@@ -90,7 +92,6 @@ constexpr ThemeMetrics values = {.batteryWidth = 15,
                                  .homeCoverHeight = 400,
                                  .homeCoverTileHeight = 400,
                                  .homeRecentBooksCount = 1,
-                                 .libraryItemsPerPage = 5,
                                  .buttonHintsHeight = 40,
                                  .sideButtonHintsWidth = 30,
                                  .progressBarHeight = 16,
@@ -101,7 +102,10 @@ constexpr ThemeMetrics values = {.batteryWidth = 15,
                                  .keyboardKeyHeight = 30,
                                  .keyboardKeySpacing = 10,
                                  .keyboardBottomAligned = false,
-                                 .keyboardCenteredText = false};
+                                 .keyboardCenteredText = false,
+                                 .libraryItemsPerPage = 5,
+                                 .coverHeight = 100
+                                };
 }
 
 class BaseTheme {

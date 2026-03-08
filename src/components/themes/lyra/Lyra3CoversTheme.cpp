@@ -11,6 +11,7 @@
 #include "RecentBooksStore.h"
 #include "components/UITheme.h"
 #include "components/icons/cover.h"
+#include "components/icons/book.h"
 #include "fontIds.h"
 
 // Internal constants
@@ -117,5 +118,78 @@ void Lyra3CoversTheme::drawRecentBookCover(GfxRenderer& renderer, Rect rect, con
     }
   } else {
     drawEmptyRecents(renderer, rect);
+  }
+}
+
+void Lyra3CoversTheme::drawListWithCover(GfxRenderer& renderer, Rect rect, int itemCount, int selectedIndex,
+                                         const std::function<std::string(int index)>& rowTitle,
+                                         const std::function<std::string(int index)>& rowAuthor,
+                                         const std::function<std::string(int index)>& rowCoverPath) const {
+  const int pageItems = Lyra3CoversMetrics::values.libraryItemsPerPage;
+  const int thumbHeight = Lyra3CoversMetrics::values.coverHeight;
+  const int rowHeight = rect.height / pageItems;
+  const int coverMargin = (rowHeight / thumbHeight) / 2;
+
+  const int totalPages = (itemCount + pageItems - 1) / pageItems;
+  if (totalPages > 1) {
+    constexpr int indicatorWidth = 20;
+    constexpr int arrowSize = 6;
+    constexpr int margin = 15;
+
+    const int centerX = rect.x + rect.width - indicatorWidth / 2 - margin;
+    const int indicatorTop = rect.y;
+    const int indicatorBottom = rect.y + rect.height - arrowSize;
+
+    for (int i = 0; i < arrowSize; ++i) {
+      const int lineWidth = 1 + i * 2;
+      const int startX = centerX - i;
+      renderer.drawLine(startX, indicatorTop + i, startX + lineWidth - 1, indicatorTop + i);
+    }
+
+    for (int i = 0; i < arrowSize; ++i) {
+      const int lineWidth = 1 + (arrowSize - 1 - i) * 2;
+      const int startX = centerX - (arrowSize - 1 - i);
+      renderer.drawLine(startX, indicatorBottom - arrowSize + 1 + i, startX + lineWidth - 1,
+                        indicatorBottom - arrowSize + 1 + i);
+    }
+  }
+
+  const int coverHeight = rowHeight - 16;
+  const int coverWidth = coverHeight * 0.6;
+  const int coverX = Lyra3CoversMetrics::values.contentSidePadding;
+  const int textX = coverX + coverWidth + 12;
+
+  if (selectedIndex >= 0) {
+    renderer.fillRect(0, rect.y + selectedIndex % pageItems * rowHeight - 2, rect.width, rowHeight);
+  }
+
+  const auto pageStartIndex = selectedIndex / pageItems * pageItems;
+  for (int i = pageStartIndex; i < itemCount && i < pageStartIndex + pageItems; i++) {
+    const int itemY = rect.y + (i % pageItems) * rowHeight;
+    const bool isSelected = (i == selectedIndex);
+
+    std::string coverPath = rowCoverPath(i);
+
+    if (!coverPath.empty()) {
+      std::string coverBmpPath = UITheme::getCoverThumbPath(coverPath, thumbHeight);
+      FsFile file;
+      if (Storage.openFileForRead("LIST", coverBmpPath, file)) {
+        Bitmap bitmap(file);
+        if (bitmap.parseHeaders() == BmpReaderError::Ok) {
+          renderer.drawBitmap(bitmap, coverX, itemY + coverMargin, coverWidth, coverHeight);
+        }
+        file.close();
+      }
+    } else {
+      renderer.drawIcon(BookIcon, coverX + 12, itemY + 26, 24, 24);
+    }
+
+    int textY = itemY + 20;
+    auto titleText = renderer.truncatedText(UI_12_FONT_ID, rowTitle(i).c_str(), rect.width - textX - Lyra3CoversMetrics::values.contentSidePadding);
+    renderer.drawText(UI_12_FONT_ID, textX, textY, titleText.c_str(), !isSelected);
+
+    textY += 40;
+    auto authorText = renderer.truncatedText(UI_10_FONT_ID, rowAuthor(i).c_str(), rect.width - textX - Lyra3CoversMetrics::values.contentSidePadding);
+    renderer.drawText(UI_10_FONT_ID, textX, textY, authorText.c_str(), !isSelected);
   }
 }

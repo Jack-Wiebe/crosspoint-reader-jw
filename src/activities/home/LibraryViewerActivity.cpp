@@ -42,7 +42,11 @@ void LibraryViewerActivity::scanBookPaths() {
   }
   root.close();
 
-  std::sort(bookPaths.begin(), bookPaths.end());
+  std::sort(books.begin(), books.end(), [](const LibraryBook& a, const LibraryBook& b) {
+    if (a.author != b.author)
+        return a.author < b.author;
+    return a.title < b.title;
+  });
 }
 
 void LibraryViewerActivity::loadPage(size_t page) {
@@ -59,11 +63,6 @@ void LibraryViewerActivity::loadPage(size_t page) {
 
     Epub epub(path, "/.crosspoint");
     bool loaded = epub.load(true, true);
-
-    // // Generate thumbnail for cover if it doesn't exist (100px height, will scale to fit)
-    // if (loaded && !epub.getCoverBmpPath().empty()) {
-    //   epub.generateThumbBmp(100);
-    // }
 
     LibraryBook book;
     book.path = path;
@@ -143,40 +142,24 @@ void LibraryViewerActivity::loop() {
 
   int listSize = static_cast<int>(bookPaths.size());
 
-  buttonNavigator.onNextRelease([this, listSize, pageItems, totalPages] {
-    if (selectorIndex < pageItems - 1 && selectorIndex < listSize - 1) {
-      selectorIndex++;
-      requestUpdate();
-    } else if (currentPage < static_cast<size_t>(totalPages) - 1) {
-      currentPage++;
+  buttonNavigator.onNextRelease([this, listSize, pageItems] {
+    int newIndex = ButtonNavigator::nextIndex(static_cast<int>(selectorIndex), listSize);
+    if (newIndex / pageItems != currentPage) {
+      currentPage = newIndex / pageItems;
       loadPage(currentPage);
-      selectorIndex = 0;
-      requestUpdate();
-    } else {
-      // Loop back to first page
-      currentPage = 0;
-      loadPage(0);
-      selectorIndex = 0;
-      requestUpdate();
     }
+    selectorIndex = newIndex;
+    requestUpdate();
   });
 
-  buttonNavigator.onPreviousRelease([this, pageItems, totalPages] {
-    if (selectorIndex > 0) {
-      selectorIndex--;
-      requestUpdate();
-    } else if (currentPage > 0) {
-      currentPage--;
+  buttonNavigator.onPreviousRelease([this, listSize, pageItems] {
+    int newIndex = ButtonNavigator::previousIndex(static_cast<int>(selectorIndex), listSize);
+    if (newIndex / pageItems != currentPage) {
+      currentPage = newIndex / pageItems;
       loadPage(currentPage);
-      selectorIndex = books.empty() ? 0 : books.size() - 1;
-      requestUpdate();
-    } else {
-      // Loop to last page
-      currentPage = totalPages - 1;
-      loadPage(currentPage);
-      selectorIndex = books.empty() ? 0 : books.size() - 1;
-      requestUpdate();
     }
+    selectorIndex = newIndex;
+    requestUpdate();
   });
 
   buttonNavigator.onNextContinuous([this, listSize, pageItems] {
