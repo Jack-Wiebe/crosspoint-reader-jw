@@ -125,8 +125,8 @@ void Lyra3CoversTheme::drawListWithCover(GfxRenderer& renderer, Rect rect, int i
                                   const std::function<std::string(int index)>& rowTitle,
                                   const std::function<std::string(int index)>& rowAuthor,
                                   const std::function<std::string(int index)>& rowCoverPath) const {
-  const int pageItems = BaseMetrics::values.libraryItemsPerPage;
-  const int thumbHeight = BaseMetrics::values.coverHeight;
+  const int pageItems = Lyra3CoversMetrics::values.libraryItemsPerPage;
+  const int thumbHeight = Lyra3CoversMetrics::values.coverHeight;
   const int rowHeight = rect.height / pageItems;
 
   const int totalPages = (itemCount + pageItems - 1) / pageItems;
@@ -136,25 +136,25 @@ void Lyra3CoversTheme::drawListWithCover(GfxRenderer& renderer, Rect rect, int i
     const int scrollBarHeight = (scrollAreaHeight * pageItems) / itemCount;
     const int currentPage = selectedIndex / pageItems;
     const int scrollBarY = rect.y + ((scrollAreaHeight - scrollBarHeight) * currentPage) / (totalPages - 1);
-    const int scrollBarX = rect.x + rect.width - BaseMetrics::values.scrollBarRightOffset;
+    const int scrollBarX = rect.x + rect.width - Lyra3CoversMetrics::values.scrollBarRightOffset;
     renderer.drawLine(scrollBarX, rect.y, scrollBarX, rect.y + scrollAreaHeight, true);
-    renderer.fillRect(scrollBarX - BaseMetrics::values.scrollBarWidth, scrollBarY, BaseMetrics::values.scrollBarWidth,
+    renderer.fillRect(scrollBarX - Lyra3CoversMetrics::values.scrollBarWidth, scrollBarY, Lyra3CoversMetrics::values.scrollBarWidth,
                       scrollBarHeight, true);
   }
 
   const int coverHeight = rowHeight - 16;
   const int coverWidth = coverHeight * 0.6;
-  const int coverX = BaseMetrics::values.contentSidePadding;
+  const int coverX = Lyra3CoversMetrics::values.contentSidePadding;
   const int textX = coverX + coverWidth + 12;
   const int coverMargin = (rowHeight / coverHeight) / 2;
 
   int contentWidth =
       rect.width -
-      (totalPages > 1 ? (BaseMetrics::values.scrollBarWidth + BaseMetrics::values.scrollBarRightOffset) : 1);
+      (totalPages > 1 ? (Lyra3CoversMetrics::values.scrollBarWidth + Lyra3CoversMetrics::values.scrollBarRightOffset) : 1);
 
   if (selectedIndex >= 0) {
-    renderer.fillRoundedRect(BaseMetrics::values.contentSidePadding, rect.y + selectedIndex % pageItems * rowHeight,
-                             contentWidth - BaseMetrics::values.contentSidePadding * 2, rowHeight, cornerRadius,
+    renderer.fillRoundedRect(Lyra3CoversMetrics::values.contentSidePadding, rect.y + selectedIndex % pageItems * rowHeight,
+                             contentWidth - Lyra3CoversMetrics::values.contentSidePadding * 2, rowHeight, cornerRadius,
                              Color::LightGray);
   }
 
@@ -185,11 +185,11 @@ void Lyra3CoversTheme::drawListWithCover(GfxRenderer& renderer, Rect rect, int i
     }
 
     int textY = itemY + 20;
-    auto titleText = renderer.truncatedText(UI_12_FONT_ID, rowTitle(i).c_str(), rect.width - textX - BaseMetrics::values.contentSidePadding);
+    auto titleText = renderer.truncatedText(UI_12_FONT_ID, rowTitle(i).c_str(), rect.width - textX - Lyra3CoversMetrics::values.contentSidePadding);
     renderer.drawText(UI_12_FONT_ID, textX, textY, titleText.c_str());
 
     textY += 40;
-    auto authorText = renderer.truncatedText(UI_10_FONT_ID, rowAuthor(i).c_str(), rect.width - textX - BaseMetrics::values.contentSidePadding);
+    auto authorText = renderer.truncatedText(UI_10_FONT_ID, rowAuthor(i).c_str(), rect.width - textX - Lyra3CoversMetrics::values.contentSidePadding);
     renderer.drawText(UI_10_FONT_ID, textX, textY, authorText.c_str());
   }
 }
