@@ -93,13 +93,12 @@ void LibraryViewerActivity::loadBooks() {
     bookPaths = LIBRARY.getBookPaths();
   }
 
-  // Check if we need to rescan (new books added)
+  // Always scan to check for changes (new books added or cache deleted)
   scanBookPaths();
   if (bookPaths.size() != LIBRARY.getPathCount()) {
-    isFirstLoad = true;
-  }
-
-  if (isFirstLoad || books.empty()) {
+    // Paths differ from cache - reload
+    LIBRARY.setBookPaths(bookPaths);
+    LIBRARY.saveToFile();
     loadPage(0);
     currentPage = 0;
   }
@@ -111,7 +110,6 @@ void LibraryViewerActivity::loadBooks() {
 void LibraryViewerActivity::onEnter() {
   Activity::onEnter();
 
-  isFirstLoad = (LIBRARY.getPathCount() == 0);
   loadBooks();
 
   requestUpdate();

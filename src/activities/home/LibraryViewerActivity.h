@@ -14,7 +14,6 @@ class LibraryViewerActivity final : public Activity {
     size_t selectorIndex = 0;
     size_t currentPage = 0;
     bool isLoading = false;
-    bool isFirstLoad = false;
 
     std::vector<LibraryBook> books;
     std::vector<std::string> bookPaths;
