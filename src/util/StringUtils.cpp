@@ -75,7 +75,7 @@ std::string getFileNameWithoutExtension(const std::string& fileName) {
     size_t ext = fileName.rfind('.');
     size_t pos = fileName.rfind('/');
     if (pos == std::string::npos || ext == std::string::npos) return fileName; // no dot found, return as-is
-    return fileName.substr(pos+1, ext); //from '/ to .'
+    return fileName.substr(pos+1, ext-1); //from '/ to .'
 }
 
 }  // namespace StringUtils

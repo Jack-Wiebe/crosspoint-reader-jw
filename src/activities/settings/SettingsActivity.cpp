@@ -6,6 +6,7 @@
 #include "ButtonRemapActivity.h"
 #include "CalibreSettingsActivity.h"
 #include "ClearCacheActivity.h"
+#include "ClearLibraryCacheActivity.h"
 #include "CrossPointSettings.h"
 #include "KOReaderSettingsActivity.h"
 #include "LanguageSelectActivity.h"
@@ -50,6 +51,7 @@ void SettingsActivity::onEnter() {
   systemSettings.push_back(SettingInfo::Action(StrId::STR_KOREADER_SYNC, SettingAction::KOReaderSync));
   systemSettings.push_back(SettingInfo::Action(StrId::STR_OPDS_BROWSER, SettingAction::OPDSBrowser));
   systemSettings.push_back(SettingInfo::Action(StrId::STR_CLEAR_READING_CACHE, SettingAction::ClearCache));
+  systemSettings.push_back(SettingInfo::Action(StrId::STR_CLEAR_LIBRARY_CACHE, SettingAction::ClearLibraryCache));
   systemSettings.push_back(SettingInfo::Action(StrId::STR_CHECK_UPDATES, SettingAction::CheckForUpdates));
   systemSettings.push_back(SettingInfo::Action(StrId::STR_LANGUAGE, SettingAction::Language));
   readerSettings.push_back(SettingInfo::Action(StrId::STR_CUSTOMISE_STATUS_BAR, SettingAction::CustomiseStatusBar));
@@ -180,6 +182,9 @@ void SettingsActivity::toggleCurrentSetting() {
         break;
       case SettingAction::ClearCache:
         startActivityForResult(std::make_unique<ClearCacheActivity>(renderer, mappedInput), resultHandler);
+        break;
+      case SettingAction::ClearLibraryCache:
+        startActivityForResult(std::make_unique<ClearLibraryCacheActivity>(renderer, mappedInput), resultHandler);
         break;
       case SettingAction::CheckForUpdates:
         startActivityForResult(std::make_unique<OtaUpdateActivity>(renderer, mappedInput), resultHandler);
