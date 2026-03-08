@@ -121,7 +121,7 @@ void Lyra3CoversTheme::drawRecentBookCover(GfxRenderer& renderer, Rect rect, con
   }
 }
 
-void BaseTheme::drawListWithCover(GfxRenderer& renderer, Rect rect, int itemCount, int selectedIndex,
+void Lyra3CoversTheme::drawListWithCover(GfxRenderer& renderer, Rect rect, int itemCount, int selectedIndex,
                                   const std::function<std::string(int index)>& rowTitle,
                                   const std::function<std::string(int index)>& rowAuthor,
                                   const std::function<std::string(int index)>& rowCoverPath) const {
