@@ -54,6 +54,9 @@ void LibraryViewerActivity::loadPage(size_t page) {
 
   books.clear();
 
+  isLoading = true;
+  requestUpdate();
+
   for (size_t i = start; i < end; i++) {
     const std::string& path = bookPaths[i];
 
@@ -79,6 +82,8 @@ void LibraryViewerActivity::loadPage(size_t page) {
     if (a.author != b.author) return a.author < b.author;
     return a.title < b.title;
   });
+
+  isLoading = false;
 
   LIBRARY.setBookPaths(bookPaths);
   LIBRARY.setBooks(books);
@@ -238,7 +243,7 @@ void LibraryViewerActivity::render(RenderLock&&) {
   const int contentHeight = pageHeight - contentTop - metrics.buttonHintsHeight - metrics.verticalSpacing;
 
   if (isLoading) {
-    renderer.drawText(UI_10_FONT_ID, metrics.contentSidePadding, contentTop + 20, tr(STR_LOADING_POPUP));
+    GUI.drawPopup(renderer, tr(STR_LOADING_POPUP));
   } else if (books.empty()) {
     renderer.drawText(UI_10_FONT_ID, metrics.contentSidePadding, contentTop + 20, tr(STR_NO_BOOKS_FOUND));
   } else {
