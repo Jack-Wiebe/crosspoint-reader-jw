@@ -42,11 +42,7 @@ void LibraryViewerActivity::scanBookPaths() {
   }
   root.close();
 
-  std::sort(books.begin(), books.end(), [](const LibraryBook& a, const LibraryBook& b) {
-    if (a.author != b.author)
-        return a.author < b.author;
-    return a.title < b.title;
-  });
+  std::sort(bookPaths.begin(), bookPaths.end());
 }
 
 void LibraryViewerActivity::loadPage(size_t page) {
@@ -64,14 +60,25 @@ void LibraryViewerActivity::loadPage(size_t page) {
     Epub epub(path, "/.crosspoint");
     bool loaded = epub.load(true, true);
 
+    // Generate thumbnail first
+    if (loaded && !epub.getCoverBmpPath().empty()) {
+      epub.generateThumbBmp(100);
+    }
+
     LibraryBook book;
     book.path = path;
-    book.title = StringUtils::getFileNameWithoutExtension(path);
+    book.title = loaded ? epub.getTitle() : StringUtils::getFileNameWithoutExtension(path);
     book.author = loaded ? epub.getAuthor() : "";
     book.coverBmpPath = loaded ? epub.getThumbBmpPath() : "";
 
     books.push_back(book);
   }
+
+  // Sort by author, then title
+  std::sort(books.begin(), books.end(), [](const LibraryBook& a, const LibraryBook& b) {
+    if (a.author != b.author) return a.author < b.author;
+    return a.title < b.title;
+  });
 
   LIBRARY.setBookPaths(bookPaths);
   LIBRARY.setBooks(books);
