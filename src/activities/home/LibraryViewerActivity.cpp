@@ -148,8 +148,10 @@ void LibraryViewerActivity::loop() {
     if (newPage != currentPage) {
       currentPage = newPage;
       loadPage(currentPage);
+      selectorIndex = newIndex - currentPage * pageItems;
+    } else {
+      selectorIndex = newIndex;
     }
-    selectorIndex = newIndex;
     requestUpdate();
   });
 
@@ -159,8 +161,10 @@ void LibraryViewerActivity::loop() {
     if (newPage != currentPage) {
       currentPage = newPage;
       loadPage(currentPage);
+      selectorIndex = newIndex - currentPage * pageItems;
+    } else {
+      selectorIndex = newIndex;
     }
-    selectorIndex = newIndex;
     requestUpdate();
   });
 

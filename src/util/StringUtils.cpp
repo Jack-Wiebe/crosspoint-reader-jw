@@ -72,9 +72,10 @@ bool checkFileExtension(const String& fileName, const char* extension) {
 }
 
 std::string getFileNameWithoutExtension(const std::string& fileName) {
-    size_t pos = fileName.rfind('.');
-    if (pos == std::string::npos) return fileName; // no dot found, return as-is
-    return fileName.substr(0, pos);
+    size_t ext = fileName.rfind('.');
+    size_t pos = fileName.rfind('/');
+    if (pos == std::string::npos || ext == std::string::npos) return fileName; // no dot found, return as-is
+    return fileName.substr(pos, ext); //from '/ to .'
 }
 
 }  // namespace StringUtils
