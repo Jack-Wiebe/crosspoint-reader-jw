@@ -61,21 +61,12 @@ void LibraryViewerActivity::loadBooks() {
 
   scanBookPaths();
 
+  // Try loading from cache
   if (LIBRARY.loadFromFile()) {
-    const auto& cachedPaths = LIBRARY.getBookPaths();
     const auto& cachedBooks = LIBRARY.getBooks();
 
-    bool pathsMatch = (bookPaths.size() == cachedPaths.size());
-    if (pathsMatch) {
-      for (size_t i = 0; i < bookPaths.size(); i++) {
-        if (bookPaths[i] != cachedPaths[i]) {
-          pathsMatch = false;
-          break;
-        }
-      }
-    }
-
-    if (pathsMatch && !cachedBooks.empty()) {
+    // If cache has books and count matches current paths, use cache instantly
+    if (!cachedBooks.empty() && cachedBooks.size() == bookPaths.size()) {
       books = cachedBooks;
       std::sort(books.begin(), books.end(), [](const LibraryBook& a, const LibraryBook& b) {
         if (a.author != b.author) return a.author < b.author;
@@ -86,36 +77,9 @@ void LibraryViewerActivity::loadBooks() {
       selectorIndex = 0;
       return;
     }
-
-    if (!cachedBooks.empty()) {
-      books = cachedBooks;
-      size_t resumeIndex = books.size();
-
-      bool canResume = true;
-      for (size_t i = 0; i < books.size(); i++) {
-        bool found = false;
-        for (const auto& path : bookPaths) {
-          if (books[i].path == path) {
-            found = true;
-            break;
-          }
-        }
-        if (!found) {
-          canResume = false;
-          break;
-        }
-      }
-
-      if (canResume && resumeIndex < bookPaths.size()) {
-        loadingIndex = resumeIndex;
-        loadingEnd = bookPaths.size();
-        isLoading = true;
-        requestUpdate();
-        return;
-      }
-    }
   }
 
+  // Cache invalid or empty - full progressive load
   loadingIndex = 0;
   loadingEnd = bookPaths.size();
   isLoading = true;
