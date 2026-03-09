@@ -13,7 +13,11 @@ class LibraryViewerActivity final : public Activity {
 
     size_t selectorIndex = 0;
     size_t currentPage = 0;
+    size_t displayStart = 0;
     bool isLoading = false;
+
+    size_t loadingEnd = 0;
+    size_t loadingIndex = 0;
 
     std::vector<LibraryBook> books;
     std::vector<std::string> bookPaths;

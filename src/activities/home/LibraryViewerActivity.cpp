@@ -49,82 +49,48 @@ void LibraryViewerActivity::loadPage(size_t page) {
   const auto& metrics = UITheme::getInstance().getMetrics();
   const size_t itemsPerPage = metrics.libraryItemsPerPage;
 
-  size_t start = page * itemsPerPage;
-  size_t end = std::min(start + itemsPerPage, bookPaths.size());
-
-  books.clear();
-
-  isLoading = true;
+  displayStart = page * itemsPerPage;
+  currentPage = page;
+  selectorIndex = 0;
   requestUpdate();
-
-  for (size_t i = start; i < end; i++) {
-    const std::string& path = bookPaths[i];
-
-    Epub epub(path, "/.crosspoint");
-    bool loaded = epub.load(true, true);
-
-    // Generate thumbnail first
-    if (loaded && !epub.getCoverBmpPath().empty()) {
-      epub.generateThumbBmp(100);
-    }
-
-    LibraryBook book;
-    book.path = path;
-    book.title = loaded ? epub.getTitle() : StringUtils::getFileNameWithoutExtension(path);
-    book.author = loaded ? epub.getAuthor() : "";
-    book.coverBmpPath = loaded ? epub.getThumbBmpPath() : "";
-
-    books.push_back(book);
-  }
-
-  // Sort by author, then title
-  std::sort(books.begin(), books.end(), [](const LibraryBook& a, const LibraryBook& b) {
-    if (a.author != b.author) return a.author < b.author;
-    return a.title < b.title;
-  });
-
-  isLoading = false;
-
-  LIBRARY.setBookPaths(bookPaths);
-  LIBRARY.setBooks(books);
 }
 
 void LibraryViewerActivity::loadBooks() {
-  isLoading = true;
-  requestUpdate();
-
-  // Clear the singleton and local vectors to ensure we start fresh
-  LIBRARY.clear();
   books.clear();
   bookPaths.clear();
 
-  // Try loading from store first
-  if (!LIBRARY.loadFromFile()) {
-    // No cache - scan and save paths
-    scanBookPaths();
-    LIBRARY.setBookPaths(bookPaths);
-    LIBRARY.saveToFile();
-    // Force reload page 0 since we have no cache
-    loadPage(0);
-    currentPage = 0;
-  } else {
-    // Load from cache
-    books = LIBRARY.getBooks();
-    bookPaths = LIBRARY.getBookPaths();
+  scanBookPaths();
 
-    // Check for changes (new books added)
-    scanBookPaths();
-    if (bookPaths.size() != LIBRARY.getPathCount()) {
-      // Paths differ from cache - reload
-      LIBRARY.setBookPaths(bookPaths);
-      LIBRARY.saveToFile();
-      loadPage(0);
+  if (LIBRARY.loadFromFile()) {
+    const auto& cachedPaths = LIBRARY.getBookPaths();
+
+    bool cacheValid = (bookPaths.size() == cachedPaths.size());
+    if (cacheValid) {
+      for (size_t i = 0; i < bookPaths.size(); i++) {
+        if (bookPaths[i] != cachedPaths[i]) {
+          cacheValid = false;
+          break;
+        }
+      }
+    }
+
+    if (cacheValid) {
+      books = LIBRARY.getBooks();
+      std::sort(books.begin(), books.end(), [](const LibraryBook& a, const LibraryBook& b) {
+        if (a.author != b.author) return a.author < b.author;
+        return a.title < b.title;
+      });
       currentPage = 0;
+      displayStart = 0;
+      selectorIndex = 0;
+      return;
     }
   }
 
-  selectorIndex = 0;
-  isLoading = false;
+  loadingIndex = 0;
+  loadingEnd = bookPaths.size();
+  isLoading = true;
+  requestUpdate();
 }
 
 void LibraryViewerActivity::onEnter() {
@@ -137,6 +103,8 @@ void LibraryViewerActivity::onEnter() {
 
 void LibraryViewerActivity::onExit() {
   Activity::onExit();
+
+  isLoading = false;
   books.clear();
   bookPaths.clear();
 }
@@ -144,12 +112,48 @@ void LibraryViewerActivity::onExit() {
 void LibraryViewerActivity::loop() {
   const auto& metrics = UITheme::getInstance().getMetrics();
   const int pageItems = metrics.libraryItemsPerPage;
-  const int totalPages = (bookPaths.size() + pageItems - 1) / pageItems;
+  const int totalPages = (books.size() + pageItems - 1) / pageItems;
+
+  // Progressive loading: load one book per loop iteration
+  if (isLoading && loadingIndex < loadingEnd) {
+    const std::string& path = bookPaths[loadingIndex];
+
+    Epub epub(path, "/.crosspoint");
+    bool loaded = epub.load(true, true);
+
+    if (loaded && !epub.getCoverBmpPath().empty()) {
+      epub.generateThumbBmp(100);
+    }
+
+    LibraryBook book;
+    book.path = path;
+    book.title = loaded ? epub.getTitle() : StringUtils::getFileNameWithoutExtension(path);
+    book.author = loaded ? epub.getAuthor() : "";
+    book.coverBmpPath = loaded ? epub.getThumbBmpPath() : "";
+
+    books.push_back(book);
+
+    loadingIndex++;
+    requestUpdate();
+    return;
+  }
+
+  // Finished loading
+  if (isLoading && loadingIndex >= loadingEnd) {
+    std::sort(books.begin(), books.end(), [](const LibraryBook& a, const LibraryBook& b) {
+      if (a.author != b.author) return a.author < b.author;
+      return a.title < b.title;
+    });
+
+    LIBRARY.setBookPaths(bookPaths);
+    LIBRARY.setBooks(books);
+    isLoading = false;
+  }
 
   // Handle page navigation
   if (mappedInput.wasReleased(MappedInputManager::Button::Confirm)) {
     if (!books.empty() && selectorIndex < books.size()) {
-      onSelectBook(books[selectorIndex].path);
+      onSelectBook(books[displayStart + selectorIndex].path);
       return;
     }
   }
@@ -158,10 +162,10 @@ void LibraryViewerActivity::loop() {
     onGoHome();
   }
 
-  int listSize = static_cast<int>(bookPaths.size());
+  int listSize = static_cast<int>(books.size());
 
   buttonNavigator.onNextRelease([this, pageItems, listSize, totalPages] {
-    int currentPageItems = books.size();
+    int currentPageItems = std::min(pageItems, static_cast<int>(listSize - currentPage * pageItems));
     int newIndex = ButtonNavigator::nextIndex(selectorIndex, currentPageItems);
 
     if (newIndex < selectorIndex) {
@@ -178,7 +182,7 @@ void LibraryViewerActivity::loop() {
   });
 
   buttonNavigator.onPreviousRelease([this, pageItems, listSize, totalPages] {
-    int currentPageItems = books.size();
+    int currentPageItems = std::min(pageItems, static_cast<int>(listSize - currentPage * pageItems));
     int newIndex = ButtonNavigator::previousIndex(selectorIndex, currentPageItems);
 
     // If wrapped (newIndex > selectorIndex), we moved to previous page
@@ -231,7 +235,7 @@ void LibraryViewerActivity::render(RenderLock&&) {
   const auto pageHeight = renderer.getScreenHeight();
   const auto& metrics = UITheme::getInstance().getMetrics();
 
-  const int totalPages = (bookPaths.size() + metrics.libraryItemsPerPage - 1) / metrics.libraryItemsPerPage;
+  const int totalPages = (books.size() + metrics.libraryItemsPerPage - 1) / metrics.libraryItemsPerPage;
   std::string headerTitle = tr(STR_LIBRARY);
   if (totalPages > 1) {
     headerTitle += " (" + std::to_string(currentPage + 1) + "/" + std::to_string(totalPages) + ")";
@@ -243,15 +247,21 @@ void LibraryViewerActivity::render(RenderLock&&) {
   const int contentHeight = pageHeight - contentTop - metrics.buttonHintsHeight - metrics.verticalSpacing;
 
   if (isLoading) {
-    GUI.drawPopup(renderer, tr(STR_LOADING_POPUP));
+    std::string loadingMsg = tr(STR_LOADING_POPUP);
+    if (loadingEnd > 0) {
+      loadingMsg += " " + std::to_string(loadingIndex + 1) + "/" + std::to_string(loadingEnd);
+    }
+    GUI.drawPopup(renderer, loadingMsg.c_str());
   } else if (books.empty()) {
     renderer.drawText(UI_10_FONT_ID, metrics.contentSidePadding, contentTop + 20, tr(STR_NO_BOOKS_FOUND));
   } else {
+    size_t displayEnd = std::min(displayStart + metrics.libraryItemsPerPage, books.size());
+    size_t pageBookCount = displayEnd - displayStart;
     GUI.drawListWithCover(
-        renderer, Rect{0, contentTop, pageWidth, contentHeight}, books.size(), selectorIndex,
-        [this](int index) { return books[index].title; },
-        [this](int index) { return books[index].author; },
-        [this](int index) { return books[index].coverBmpPath; });
+        renderer, Rect{0, contentTop, pageWidth, contentHeight}, pageBookCount, selectorIndex,
+        [this](int index) { return books[displayStart + index].title; },
+        [this](int index) { return books[displayStart + index].author; },
+        [this](int index) { return books[displayStart + index].coverBmpPath; });
   }
 
   const auto labels = mappedInput.mapLabels(tr(STR_HOME), tr(STR_OPEN), tr(STR_DIR_UP), tr(STR_DIR_DOWN));
