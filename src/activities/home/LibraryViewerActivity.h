@@ -9,6 +9,7 @@
 
 class LibraryViewerActivity final : public Activity {
   private:
+    static constexpr size_t BATCH_SIZE = 5;
     ButtonNavigator buttonNavigator;
 
     size_t selectorIndex = 0;

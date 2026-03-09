@@ -63,19 +63,20 @@ void LibraryViewerActivity::loadBooks() {
 
   if (LIBRARY.loadFromFile()) {
     const auto& cachedPaths = LIBRARY.getBookPaths();
+    const auto& cachedBooks = LIBRARY.getBooks();
 
-    bool cacheValid = (bookPaths.size() == cachedPaths.size());
-    if (cacheValid) {
+    bool pathsMatch = (bookPaths.size() == cachedPaths.size());
+    if (pathsMatch) {
       for (size_t i = 0; i < bookPaths.size(); i++) {
         if (bookPaths[i] != cachedPaths[i]) {
-          cacheValid = false;
+          pathsMatch = false;
           break;
         }
       }
     }
 
-    if (cacheValid) {
-      books = LIBRARY.getBooks();
+    if (pathsMatch && !cachedBooks.empty()) {
+      books = cachedBooks;
       std::sort(books.begin(), books.end(), [](const LibraryBook& a, const LibraryBook& b) {
         if (a.author != b.author) return a.author < b.author;
         return a.title < b.title;
@@ -84,6 +85,34 @@ void LibraryViewerActivity::loadBooks() {
       displayStart = 0;
       selectorIndex = 0;
       return;
+    }
+
+    if (!cachedBooks.empty()) {
+      books = cachedBooks;
+      size_t resumeIndex = books.size();
+
+      bool canResume = true;
+      for (size_t i = 0; i < books.size(); i++) {
+        bool found = false;
+        for (const auto& path : bookPaths) {
+          if (books[i].path == path) {
+            found = true;
+            break;
+          }
+        }
+        if (!found) {
+          canResume = false;
+          break;
+        }
+      }
+
+      if (canResume && resumeIndex < bookPaths.size()) {
+        loadingIndex = resumeIndex;
+        loadingEnd = bookPaths.size();
+        isLoading = true;
+        requestUpdate();
+        return;
+      }
     }
   }
 
@@ -114,26 +143,34 @@ void LibraryViewerActivity::loop() {
   const int pageItems = metrics.libraryItemsPerPage;
   const int totalPages = (books.size() + pageItems - 1) / pageItems;
 
-  // Progressive loading: load one book per loop iteration
+  // Progressive loading: load batch of books per loop iteration
   if (isLoading && loadingIndex < loadingEnd) {
-    const std::string& path = bookPaths[loadingIndex];
+    size_t batchEnd = std::min(loadingIndex + BATCH_SIZE, loadingEnd);
 
-    Epub epub(path, "/.crosspoint");
-    bool loaded = epub.load(true, true);
+    for (size_t i = loadingIndex; i < batchEnd; i++) {
+      const std::string& path = bookPaths[i];
 
-    if (loaded && !epub.getCoverBmpPath().empty()) {
-      epub.generateThumbBmp(100);
+      Epub epub(path, "/.crosspoint");
+      bool loaded = epub.load(true, true);
+
+      if (loaded && !epub.getCoverBmpPath().empty()) {
+        epub.generateThumbBmp(100);
+      }
+
+      LibraryBook book;
+      book.path = path;
+      book.title = loaded ? epub.getTitle() : StringUtils::getFileNameWithoutExtension(path);
+      book.author = loaded ? epub.getAuthor() : "";
+      book.coverBmpPath = loaded ? epub.getThumbBmpPath() : "";
+
+      books.push_back(book);
     }
 
-    LibraryBook book;
-    book.path = path;
-    book.title = loaded ? epub.getTitle() : StringUtils::getFileNameWithoutExtension(path);
-    book.author = loaded ? epub.getAuthor() : "";
-    book.coverBmpPath = loaded ? epub.getThumbBmpPath() : "";
+    LIBRARY.setBookPaths(bookPaths);
+    LIBRARY.setBooks(books);
+    LIBRARY.saveToFile();
 
-    books.push_back(book);
-
-    loadingIndex++;
+    loadingIndex = batchEnd;
     requestUpdate();
     return;
   }
@@ -147,6 +184,7 @@ void LibraryViewerActivity::loop() {
 
     LIBRARY.setBookPaths(bookPaths);
     LIBRARY.setBooks(books);
+    LIBRARY.saveToFile();
     isLoading = false;
   }
 
