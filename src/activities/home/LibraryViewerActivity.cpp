@@ -7,6 +7,7 @@
 #include <I18n.h>
 
 #include <algorithm>
+#include <unordered_map>
 
 #include "LibraryStore.h"
 #include "MappedInputManager.h"
@@ -61,28 +62,61 @@ void LibraryViewerActivity::loadBooks() {
 
   scanBookPaths();
 
-  // Try loading from cache
-  if (LIBRARY.loadFromFile()) {
-    const auto& cachedBooks = LIBRARY.getBooks();
+  std::vector<LibraryBook> cachedBooks;
+  bool haveCache = LIBRARY.loadFromFile();
+  if (haveCache) {
+    cachedBooks = LIBRARY.getBooks();
+  }
 
-    // If cache has books and count matches current paths, use cache instantly
-    if (!cachedBooks.empty() && cachedBooks.size() == bookPaths.size()) {
-      books = cachedBooks;
-      std::sort(books.begin(), books.end(), [](const LibraryBook& a, const LibraryBook& b) {
-        if (a.author != b.author) return a.author < b.author;
-        return a.title < b.title;
-      });
-      currentPage = 0;
-      displayStart = 0;
-      selectorIndex = 0;
-      return;
+  // Build map of cached books by path
+  std::unordered_map<std::string, LibraryBook> cachedMap;
+  cachedMap.clear();
+  for (const auto& b : cachedBooks) {
+    cachedMap[b.path] = b;
+  }
+
+  // Pre-allocate and populate with cached entries where possible
+  books.assign(bookPaths.size(), LibraryBook());
+  itemCached.assign(bookPaths.size(), false);
+  size_t unprocessedCount = 0;
+  for (size_t i = 0; i < bookPaths.size(); i++) {
+    auto it = cachedMap.find(bookPaths[i]);
+    if (it != cachedMap.end()) {
+      books[i] = it->second;
+      itemCached[i] = true;
+    } else {
+      itemCached[i] = false;
+      unprocessedCount++;
     }
   }
 
-  // Cache invalid or empty - full progressive load
+  generatingThumbs = false;
+  thumbGenIndex = 0;
+
+  if (unprocessedCount == 0) {
+    // All books are cached - start thumbnail generation check in background if needed
+    std::sort(books.begin(), books.end(), [](const LibraryBook& a, const LibraryBook& b) {
+      if (a.author != b.author) return a.author < b.author;
+      return a.title < b.title;
+    });
+
+    LIBRARY.setBookPaths(bookPaths);
+    LIBRARY.setBooks(books);
+    LIBRARY.saveToFile();
+
+    isLoading = false;
+    generatingThumbs = true;
+    thumbGenIndex = 0;
+    requestUpdate();
+    return;
+  }
+
+  // Some books need processing
   loadingIndex = 0;
   loadingEnd = bookPaths.size();
+  nextUnprocessed = 0;
   isLoading = true;
+  generatingThumbs = false;
   requestUpdate();
 }
 
@@ -98,8 +132,10 @@ void LibraryViewerActivity::onExit() {
   Activity::onExit();
 
   isLoading = false;
+  generatingThumbs = false;
   books.clear();
   bookPaths.clear();
+  itemCached.clear();
 }
 
 void LibraryViewerActivity::loop() {
@@ -107,49 +143,78 @@ void LibraryViewerActivity::loop() {
   const int pageItems = metrics.libraryItemsPerPage;
   const int totalPages = (books.size() + pageItems - 1) / pageItems;
 
-  // Progressive loading: load batch of books per loop iteration
-  if (isLoading && loadingIndex < loadingEnd) {
-    size_t batchEnd = std::min(loadingIndex + BATCH_SIZE, loadingEnd);
+  // Progressive loading: load batch of unprocessed books per loop iteration
+  if (isLoading) {
+    size_t processed = 0;
+    while (nextUnprocessed < bookPaths.size() && processed < BATCH_SIZE) {
+      if (itemCached[nextUnprocessed]) {
+        nextUnprocessed++;
+        continue;
+      }
 
-    for (size_t i = loadingIndex; i < batchEnd; i++) {
-      const std::string& path = bookPaths[i];
+      const std::string& path = bookPaths[nextUnprocessed];
 
       Epub epub(path, "/.crosspoint");
       bool loaded = epub.load(true, true);
-
-      if (loaded && !epub.getCoverBmpPath().empty()) {
-        epub.generateThumbBmp(100);
-      }
 
       LibraryBook book;
       book.path = path;
       book.title = loaded ? epub.getTitle() : StringUtils::getFileNameWithoutExtension(path);
       book.author = loaded ? epub.getAuthor() : "";
-      book.coverBmpPath = loaded ? epub.getThumbBmpPath() : "";
+      if (loaded) {
+        book.coverBmpPath = epub.getThumbBmpPath(100);
+      } else {
+        book.coverBmpPath = "";
+      }
 
-      books.push_back(book);
+      books[nextUnprocessed] = book;
+      nextUnprocessed++;
+      processed++;
     }
 
     LIBRARY.setBookPaths(bookPaths);
     LIBRARY.setBooks(books);
     LIBRARY.saveToFile();
 
-    loadingIndex = batchEnd;
+    if (nextUnprocessed >= bookPaths.size()) {
+      std::sort(books.begin(), books.end(), [](const LibraryBook& a, const LibraryBook& b) {
+        if (a.author != b.author) return a.author < b.author;
+        return a.title < b.title;
+      });
+
+      LIBRARY.setBookPaths(bookPaths);
+      LIBRARY.setBooks(books);
+      LIBRARY.saveToFile();
+
+      isLoading = false;
+      generatingThumbs = true;
+      thumbGenIndex = 0;
+    }
+
     requestUpdate();
     return;
   }
 
-  // Finished loading
-  if (isLoading && loadingIndex >= loadingEnd) {
-    std::sort(books.begin(), books.end(), [](const LibraryBook& a, const LibraryBook& b) {
-      if (a.author != b.author) return a.author < b.author;
-      return a.title < b.title;
-    });
+  // Background thumbnail generation
+  if (generatingThumbs) {
+    size_t processed = 0;
+    while (thumbGenIndex < books.size() && processed < BATCH_SIZE) {
+      LibraryBook& book = books[thumbGenIndex];
+      if (!book.coverBmpPath.empty()) {
+        Epub epub(book.path, "/.crosspoint");
+        if (epub.load(true, true)) {
+          epub.generateThumbBmp(100);
+        }
+      }
+      thumbGenIndex++;
+      processed++;
+    }
 
-    LIBRARY.setBookPaths(bookPaths);
-    LIBRARY.setBooks(books);
-    LIBRARY.saveToFile();
-    isLoading = false;
+    if (thumbGenIndex >= books.size()) {
+      generatingThumbs = false;
+    }
+    requestUpdate();
+    return;
   }
 
   // Handle page navigation
@@ -250,8 +315,18 @@ void LibraryViewerActivity::render(RenderLock&&) {
 
   if (isLoading) {
     std::string loadingMsg = tr(STR_LOADING_POPUP);
-    if (loadingEnd > 0) {
-      loadingMsg += " " + std::to_string(loadingIndex + 1) + "/" + std::to_string(loadingEnd);
+    if (bookPaths.size() > 0) {
+      size_t done = nextUnprocessed;
+      if (done > bookPaths.size()) done = bookPaths.size();
+      loadingMsg += " " + std::to_string(done) + "/" + std::to_string(bookPaths.size());
+    }
+    GUI.drawPopup(renderer, loadingMsg.c_str());
+  } else if (generatingThumbs) {
+    std::string loadingMsg = tr(STR_LOADING_POPUP);
+    if (books.size() > 0) {
+      size_t done = thumbGenIndex;
+      if (done > books.size()) done = books.size();
+      loadingMsg += " " + std::to_string(done) + "/" + std::to_string(books.size());
     }
     GUI.drawPopup(renderer, loadingMsg.c_str());
   } else if (books.empty()) {
@@ -266,8 +341,13 @@ void LibraryViewerActivity::render(RenderLock&&) {
         [this](int index) { return books[displayStart + index].coverBmpPath; });
   }
 
-  const auto labels = mappedInput.mapLabels(tr(STR_HOME), tr(STR_OPEN), tr(STR_DIR_UP), tr(STR_DIR_DOWN));
-  GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
+  if (isLoading || generatingThumbs) {
+    const auto labels = mappedInput.mapLabels(tr(STR_HOME), "", "", "");
+    GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
+  } else {
+    const auto labels = mappedInput.mapLabels(tr(STR_HOME), tr(STR_OPEN), tr(STR_DIR_UP), tr(STR_DIR_DOWN));
+    GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
+  }
 
   renderer.displayBuffer();
 }

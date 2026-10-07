@@ -9,19 +9,23 @@
 
 class LibraryViewerActivity final : public Activity {
   private:
-    static constexpr size_t BATCH_SIZE = 5;
+    static constexpr size_t BATCH_SIZE = 2;
     ButtonNavigator buttonNavigator;
 
     size_t selectorIndex = 0;
     size_t currentPage = 0;
     size_t displayStart = 0;
     bool isLoading = false;
+    bool generatingThumbs = false;
 
     size_t loadingEnd = 0;
     size_t loadingIndex = 0;
+    size_t thumbGenIndex = 0;
+    size_t nextUnprocessed = 0;
 
     std::vector<LibraryBook> books;
     std::vector<std::string> bookPaths;
+    std::vector<bool> itemCached;
 
     void scanBookPaths();
     void loadPage(size_t page);
